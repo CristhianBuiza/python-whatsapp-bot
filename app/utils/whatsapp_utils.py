@@ -3,7 +3,7 @@ from flask import current_app, jsonify
 import json
 import requests
 
-# from app.services.openai_service import generate_response
+from app.services.openai_service import generate_response
 import re
 
 
@@ -25,16 +25,19 @@ def get_text_message_input(recipient, text):
     )
 
 
-def generate_response(response):
-    # Return text in uppercase
-    return response.upper()
+# def generate_response(response):
+#     # Return text in uppercase
+#     return response.upper()
 
 
 def send_message(data):
+    cleaned_token = f"Bearer {current_app.config['ACCESS_TOKEN']}".strip()
+
     headers = {
         "Content-type": "application/json",
-        "Authorization": f"Bearer {current_app.config['ACCESS_TOKEN']}",
+        "Authorization": f"Bearer EAAdwzRB92ZAkBO24Eo9p63sa8ZCSUZC8W2xLQFD1knA5GAiv7VBIkeZBZBQ8De7ZAMZAaZAahqfVwmBOZBJVphvq3BZCYzpqI0ac357ZCp9nqNPkKoAW9CFQLNiWuV9z6xOjw9F7oXdfacammosiMQdDg8it6upjbhFhhhwkialJxGDyF5zqPvNr8rdse0JcZAnpZB1YdHhylypcHP8OQDCs3cvAZD".strip(),
     }
+
 
     url = f"https://graph.facebook.com/{current_app.config['VERSION']}/{current_app.config['PHONE_NUMBER_ID']}/messages"
 
@@ -76,18 +79,22 @@ def process_text_for_whatsapp(text):
 
 
 def process_whatsapp_message(body):
+    print(body)
+    
     wa_id = body["entry"][0]["changes"][0]["value"]["contacts"][0]["wa_id"]
     name = body["entry"][0]["changes"][0]["value"]["contacts"][0]["profile"]["name"]
 
     message = body["entry"][0]["changes"][0]["value"]["messages"][0]
+    if not message.get("text"):
+        return process_text_for_whatsapp("Puedes escribir")
     message_body = message["text"]["body"]
 
     # TODO: implement custom function here
-    response = generate_response(message_body)
+    # response = generate_response(message_body)
 
     # OpenAI Integration
-    # response = generate_response(message_body, wa_id, name)
-    # response = process_text_for_whatsapp(response)
+    response = generate_response(message_body, wa_id, name)
+    response = process_text_for_whatsapp(response)
 
     data = get_text_message_input(current_app.config["RECIPIENT_WAID"], response)
     send_message(data)

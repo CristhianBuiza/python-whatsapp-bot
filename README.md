@@ -1,208 +1,110 @@
-# Build AI WhatsApp Bots with Pure Python
+# Construye Bots de WhatsApp con IA usando Python Puro
 
-This guide will walk you through the process of creating a WhatsApp bot using the Meta (formerly Facebook) Cloud API with pure Python, and Flask particular. We'll also integrate webhook events to receive messages in real-time and use OpenAI to generate AI responses. For more information on the structure of the Flask application, you can refer to [this documentation](https://github.com/daveebbelaar/python-whatsapp-bot/tree/main/app).
+Esta guía te llevará a través del proceso de creación de un bot de WhatsApp utilizando la Meta Cloud API (anteriormente Facebook) con Python puro, y en particular, Flask. También integraremos eventos de webhook para recibir mensajes en tiempo real y utilizaremos OpenAI para generar respuestas de IA. Para más información sobre la estructura de la aplicación Flask.
 
-## Prerequisites
+## Prerrequisitos
 
-1. A Meta developer account — If you don’t have one, you can [create a Meta developer account here](https://developers.facebook.com/).
-2. A business app — If you don't have one, you can [learn to create a business app here](https://developers.facebook.com/docs/development/create-an-app/). If you don't see an option to create a business app, select **Other** > **Next** > **Business**.
-3. Familiarity with Python to follow the tutorial.
+1. Una cuenta de desarrollador de Meta — Si no tienes una, puedes [crear una cuenta de desarrollador de Meta aquí](https://developers.facebook.com/).
+2. Una aplicación de negocio — Si no tienes una, puedes [aprender a crear una aplicación de negocio aquí](https://developers.facebook.com/docs/development/create-an-app/). Si no ves la opción de crear una aplicación de negocio, selecciona **Otro** > **Siguiente** > **Negocio**.
+3. Familiaridad con Python para seguir el tutorial.
 
+## Tabla de Contenidos
 
-## Table of Contents
+- [Construye Bots de WhatsApp con IA usando Python Puro](#construye-bots-de-whatsapp-con-ia-usando-python-puro)
+  - [Prerrequisitos](#prerrequisitos)
+  - [Tabla de Contenidos](#tabla-de-contenidos)
+  - [Comenzar](#comenzar)
+  - [Paso 1: Seleccionar Números de Teléfono](#paso-1-seleccionar-números-de-teléfono)
+  - [Paso 2: Enviar Mensajes con la API](#paso-2-enviar-mensajes-con-la-api)
+  - [Paso 3: Configurar Webhooks para Recibir Mensajes](#paso-3-configurar-webhooks-para-recibir-mensajes)
+    - [Iniciar tu aplicación](#iniciar-tu-aplicación)
+    - [Lanzar ngrok](#lanzar-ngrok)
+    - [Integrar WhatsApp](#integrar-whatsapp)
+    - [Probar la Integración](#probar-la-integración)
+  - [Paso 4: Entender la Seguridad de Webhook](#paso-4-entender-la-seguridad-de-webhook)
+    - [Solicitudes de Verificación](#solicitudes-de-verificación)
+    - [Validando Solicitudes de Verificación](#validando-solicitudes-de-verificación)
+    - [Validando Cargas Útiles](#validando-cargas-útiles)
+  - [Paso 5: Aprender sobre la API y Construir Tu Aplicación](#paso-5-aprender-sobre-la-api-y-construir-tu-aplicación)
+  - [Paso 6: Integrar IA en la Aplicación](#paso-6-integrar-ia-en-la-aplicación)
+  - [Paso 7: Añadir un Número de Teléfono](#paso-7-añadir-un-número-de-teléfono)
 
-- [Build AI WhatsApp Bots with Pure Python](#build-ai-whatsapp-bots-with-pure-python)
-  - [Prerequisites](#prerequisites)
-  - [Table of Contents](#table-of-contents)
-  - [Get Started](#get-started)
-  - [Step 1: Select Phone Numbers](#step-1-select-phone-numbers)
-  - [Step 2: Send Messages with the API](#step-2-send-messages-with-the-api)
-  - [Step 3: Configure Webhooks to Receive Messages](#step-3-configure-webhooks-to-receive-messages)
-      - [Start your app](#start-your-app)
-      - [Launch ngrok](#launch-ngrok)
-      - [Integrate WhatsApp](#integrate-whatsapp)
-      - [Testing the Integration](#testing-the-integration)
-  - [Step 4: Understanding Webhook Security](#step-4-understanding-webhook-security)
-      - [Verification Requests](#verification-requests)
-      - [Validating Verification Requests](#validating-verification-requests)
-      - [Validating Payloads](#validating-payloads)
-  - [Step 5: Learn about the API and Build Your App](#step-5-learn-about-the-api-and-build-your-app)
-  - [Step 6: Integrate AI into the Application](#step-6-integrate-ai-into-the-application)
-  - [Step 7: Add a Phone Number](#step-7-add-a-phone-number)
-  - [Datalumina](#datalumina)
-  - [Tutorials](#tutorials)
+## Comenzar
 
-## Get Started
+1. **Visión General & Configuración**: Comienza tu viaje [aquí](https://developers.facebook.com/docs/whatsapp/cloud-api/get-started).
+2. **Localiza Tus Bots**: Tus bots se pueden encontrar [aquí](https://developers.facebook.com/apps/).
+3. **Documentación de la API de WhatsApp**: Familiarízate con la [documentación oficial](https://developers.facebook.com/docs/whatsapp).
+4. **Guía Útil**: Aquí hay una [guía basada en Python](https://developers.facebook.com/blog/post/2022/10/24/sending-messages-with-whatsapp-in-your-python-applications/) para enviar mensajes.
+5. **Documentación de la API para Enviar Mensajes**: Revisa [esta documentación](https://developers.facebook.com/docs/whatsapp/cloud-api/guides/send-messages).
 
-1. **Overview & Setup**: Begin your journey [here](https://developers.facebook.com/docs/whatsapp/cloud-api/get-started).
-2. **Locate Your Bots**: Your bots can be found [here](https://developers.facebook.com/apps/).
-3. **WhatsApp API Documentation**: Familiarize yourself with the [official documentation](https://developers.facebook.com/docs/whatsapp).
-4. **Helpful Guide**: Here's a [Python-based guide](https://developers.facebook.com/blog/post/2022/10/24/sending-messages-with-whatsapp-in-your-python-applications/) for sending messages.
-5. **API Docs for Sending Messages**: Check out [this documentation](https://developers.facebook.com/docs/whatsapp/cloud-api/guides/send-messages).
+## Paso 1: Seleccionar Números de Teléfono
 
-## Step 1: Select Phone Numbers
+- Asegúrate de que WhatsApp esté añadido a tu aplicación.
+- Comienzas con un número de prueba que puedes usar para enviar mensajes a hasta 5 números.
+- Ve a Configuración de la API y localiza el número de prueba desde el cual estarás enviando mensajes.
+- Aquí, también puedes añadir números para enviar mensajes. Introduce tu **propio número de WhatsApp**.
+- Recibirás un código en tu teléfono vía WhatsApp para verificar tu número.
 
-- Make sure WhatsApp is added to your App.
-- You begin with a test number that you can use to send messages to up to 5 numbers.
-- Go to API Setup and locate the test number from which you will be sending messages.
-- Here, you can also add numbers to send messages to. Enter your **own WhatsApp number**.
-- You will receive a code on your phone via WhatsApp to verify your number.
+## Paso 2: Enviar Mensajes con la API
 
-## Step 2: Send Messages with the API
+1. Obtén un token de acceso de 24 horas desde la sección de acceso de la API.
+2. Se mostrará un ejemplo de cómo enviar mensajes usando un comando `curl` que puede ser enviado desde el terminal o con una herramienta como Postman.
+3. Convertamos eso en una [función de Python con la biblioteca request]
+4. Crea archivos `.env` basados en `example.env` y actualiza las variables requeridas.
+5. Recibirás un mensaje de "Hola Mundo" (Espera un retraso de 60-120 segundos para el mensaje).
 
-1. Obtain a 24-hour access token from the API access section.
-2. It will show an example of how to send messages using a `curl` command which can be send from the terminal or with a tool like Postman.
-3. Let's convert that into a [Python function with the request library](https://github.com/daveebbelaar/python-whatsapp-bot/blob/main/start/whatsapp_quickstart.py).
-4. Create a `.env` files based on `example.env` and update the required variables. [Video example here](https://www.youtube.com/watch?v=sOwG0bw0RNU).
-5. You will receive a "Hello World" message (Expect a 60-120 second delay for the message).
+Creando un acceso que funciona más de 24 horas
 
-Creating an access that works longer then 24 hours
-1. Create a [system user at the Meta Business account level](https://business.facebook.com/settings/system-users).
-2. On the System Users page, configure the assets for your System User, assigning your WhatsApp app with full control. Don't forget to click the Save Changes button.
-   - [See step 1 here](https://github.com/daveebbelaar/python-whatsapp-bot/blob/main/img/meta-business-system-user-token.png)
-   - [See step 2 here](https://github.com/daveebbelaar/python-whatsapp-bot/blob/main/img/adding-assets-to-system-user.png)
-3. Now click `Generate new token` and select the app, and then choose how long the access token will be valid. You can choose 60 days or never expire.
-4. Select all the permissions, as I was running into errors when I only selected the WhatsApp ones.
-5. Confirm and copy the access token.
+1. Crea un [usuario del sistema a nivel de cuenta de Meta Business](https://business.facebook.com/settings/system-users).
+2. En la página de Usuarios del Sistema, configura los activos para tu Usuario del Sistema, asignando tu aplicación de WhatsApp con control total. No olvides hacer clic en el botón Guardar Cambios.
 
-Now we have to find the following information on the **App Dashboard**:
+3. Ahora haz clic en `Generar nuevo token` y selecciona la aplicación, y luego elige cuánto tiempo será válido el token de acceso. Puedes elegir 60 días o que nunca expire.
+4. Selecciona todos los permisos, ya que estaba encontrando errores cuando solo seleccionaba los de WhatsApp.
+5. Confirma y copia el token de acceso.
 
-- **APP_ID**: "<YOUR-WHATSAPP-BUSINESS-APP_ID>" (Found at App Dashboard)
-- **APP_SECRET**: "<YOUR-WHATSAPP-BUSINESS-APP_SECRET>" (Found at App Dashboard)
-- **RECIPIENT_WAID**: "<YOUR-RECIPIENT-TEST-PHONE-NUMBER>" (This is your WhatsApp ID, i.e., phone number. Make sure it is added to the account as shown in the example test message.)
-- **VERSION**: "v18.0" (The latest version of the Meta Graph API)
-- **ACCESS_TOKEN**: "<YOUR-SYSTEM-USER-ACCESS-TOKEN>" (Created in the previous step)
+Ahora tenemos que encontrar la siguiente información en el **Tablero de Aplicaciones**:
 
-> You can only send a template type message as your first message to a user. That's why you have to send a reply first before we continue. Took me 2 hours to figure this out.
+- **APP_ID**: "<TU-WHATSAPP-BUSINESS-APP_ID>" (Encontrado en el Tablero de Aplicaciones)
+- **APP_SECRET**: "<TU-WHATSAPP-BUSINESS-APP_SECRET>" (Encontrado en el Tablero de Aplicaciones)
+- **RECIPIENT_WAID**: "<TU-NÚMERO-DE-TELÉFONO-DE-PRUEBA-RECIPIENTE>" (Este es tu ID de WhatsApp, es decir, número de teléfono. Asegúrate de que esté añadido a la cuenta como se muestra en el mensaje de prueba de ejemplo.)
+- **VERSION**: "v18.0" (La última versión de la Meta Graph API)
+- **ACCESS_TOKEN**: "<TU-TOKEN-DE-ACCESO-DE-USUARIO-DEL-SISTEMA>" (Creado en el paso anterior)
 
+> Solo puedes enviar un mensaje de tipo plantilla como tu primer mensaje a un usuario. Por eso tienes que enviar una respuesta primero antes de que continuemos. Me tomó 2 horas darme cuenta de esto.
 
-## Step 3: Configure Webhooks to Receive Messages
+## Paso 3: Configurar Webhooks para Recibir Mensajes
 
-> Please note, this is the hardest part of this tutorial.
+> Por favor, ten en cuenta que esta es la parte más difícil de este tutorial.
 
-#### Start your app
-- Make you have a python installation or environment and install the requirements: `pip install -r requirements.txt`
-- Run your Flask app locally by executing [run.py](https://github.com/daveebbelaar/python-whatsapp-bot/blob/main/run.py)
+#### Iniciar tu aplicación
 
-#### Launch ngrok
+- Asegúrate de tener una instalación de python o entorno e instala los requisitos: `pip install -r requirements.txt`
+- Ejecuta tu aplicación Flask localmente ejecutando [run.py]
 
-The steps below are taken from the [ngrok documentation](https://ngrok.com/docs/integrations/whatsapp/webhooks/).
+#### Lanzar ngrok
 
-> You need a static ngrok domain because Meta validates your ngrok domain and certificate!
+Los pasos a continuación se toman de la [documentación de ngrok](https://ngrok.com/docs/integrations/whatsapp/webhooks/).
 
-Once your app is running successfully on localhost, let's get it on the internet securely using ngrok!
+> ¡Necesitas un dominio ngrok estático porque Meta valida tu dominio ngrok y certificado!
 
-1. If you're not an ngrok user yet, just sign up for ngrok for free.
-2. Download the ngrok agent.
-3. Go to the ngrok dashboard, click Your [Authtoken](https://dashboard.ngrok.com/get-started/your-authtoken), and copy your Authtoken.
-4. Follow the instructions to authenticate your ngrok agent. You only have to do this once.
-5. On the left menu, expand Cloud Edge and then click Domains.
-6. On the Domains page, click + Create Domain or + New Domain. (here everyone can start with [one free domain](https://ngrok.com/blog-post/free-static-domains-ngrok-users))
-7. Start ngrok by running the following command in a terminal on your local desktop:
-```
-ngrok http 8000 --domain your-domain.ngrok-free.app
-```
-8. ngrok will display a URL where your localhost application is exposed to the internet (copy this URL for use with Meta).
+Una vez que tu aplicación esté funcionando con éxito en localhost, ¡pongámosla en internet de manera segura usando ngrok!
 
-
-#### Integrate WhatsApp
-
-In the Meta App Dashboard, go to WhatsApp > Configuration, then click the Edit button.
-1. In the Edit webhook's callback URL popup, enter the URL provided by the ngrok agent to expose your application to the internet in the Callback URL field, with /webhook at the end (i.e. https://myexample.ngrok-free.app/webhook).
-2. Enter a verification token. This string is set up by you when you create your webhook endpoint. You can pick any string you like. Make sure to update this in your `VERIFY_TOKEN` environment variable.
-3. After you add a webhook to WhatsApp, WhatsApp will submit a validation post request to your application through ngrok. Confirm your localhost app receives the validation get request and logs `WEBHOOK_VERIFIED` in the terminal.
-4. Back to the Configuration page, click Manage.
-5. On the Webhook fields popup, click Subscribe to the **messages** field. Tip: You can subscribe to multiple fields.
-6. If your Flask app and ngrok are running, you can click on "Test" next to messages to test the subscription. You recieve a test message in upper case. If that is the case, your webhook is set up correctly.
-
-
-#### Testing the Integration
-Use the phone number associated to your WhatsApp product or use the test number you copied before.
-1. Add this number to your WhatsApp app contacts and then send a message to this number.
-2. Confirm your localhost app receives a message and logs both headers and body in the terminal.
-3. Test if the bot replies back to you in upper case.
-4. You have now succesfully integrated the bot! 🎉
-5. Now it's time to acutally build cool things with this.
-
-
-## Step 4: Understanding Webhook Security
-
-Below is some information from the Meta Webhooks API docs about verification and security. It is already implemented in the code, but you can reference it to get a better understanding of what's going on in [security.py](https://github.com/daveebbelaar/python-whatsapp-bot/blob/main/app/decorators/security.py)
-
-#### Verification Requests
-
-[Source](https://developers.facebook.com/docs/graph-api/webhooks/getting-started#:~:text=process%20these%20requests.-,Verification%20Requests,-Anytime%20you%20configure)
-
-Anytime you configure the Webhooks product in your App Dashboard, we'll send a GET request to your endpoint URL. Verification requests include the following query string parameters, appended to the end of your endpoint URL. They will look something like this:
+1. Si aún no eres usuario de ngrok, simplemente regístrate en ngrok de forma gratuita.
+2. Descarga el agente de ngrok.
+3. Ve al tablero de ngrok, haz clic en Tu [Authtoken](https://dashboard.ngrok.com/get-started/your-authtoken), y copia tu Authtoken.
+4. Sigue las instrucciones para autenticar tu agente ngrok. Solo tienes que hacer esto una vez.
+5. En el menú de la izquierda, expande Cloud Edge y luego haz clic en Dominios.
+6. En la página de Dominios, haz clic en + Crear Dominio o + Nuevo Dominio. (aquí todos pueden comenzar con [un dominio gratuito](https://ngrok.com/blog-post/free-static-domains-ngrok-users))
+7. Inicia ngrok ejecutando el siguiente comando en una terminal en tu escritorio local:
 
 ```
-GET https://www.your-clever-domain-name.com/webhook?
-  hub.mode=subscribe&
-  hub.challenge=1158201444&
-  hub.verify_token=meatyhamhock
+ngrok http 8000 --domain tu-dominio.ngrok-free.app
 ```
 
-The verify_token, `meatyhamhock` in the case of this example, is a string that you can pick. It doesn't matter what it is as long as you store in the `VERIFY_TOKEN` environment variable.
+8. ngrok mostrará una URL donde tu aplicación localhost está expuesta a internet (copia esta URL para usarla con Meta).
 
-#### Validating Verification Requests
+#### Integrar WhatsApp
 
-[Source](https://developers.facebook.com/docs/graph-api/webhooks/getting-started#:~:text=Validating%20Verification%20Requests)
+En el Tablero de Aplicaciones de Meta, ve a WhatsApp > Configuración, luego haz clic en el botón Editar.
 
-Whenever your endpoint receives a verification request, it must:
-- Verify that the hub.verify_token value matches the string you set in the Verify Token field when you configure the Webhooks product in your App Dashboard (you haven't set up this token string yet).
-- Respond with the hub.challenge value.
-
-#### Validating Payloads
-
-[Source](https://developers.facebook.com/docs/graph-api/webhooks/getting-started#:~:text=int-,Validating%20Payloads,-We%20sign%20all)
-
-WhatsApp signs all Event Notification payloads with a SHA256 signature and include the signature in the request's X-Hub-Signature-256 header, preceded with sha256=. You don't have to validate the payload, but you should.
-
-To validate the payload:
-- Generate a SHA256 signature using the payload and your app's App Secret.
-- Compare your signature to the signature in the X-Hub-Signature-256 header (everything after sha256=). If the signatures match, the payload is genuine.
-
-
-## Step 5: Learn about the API and Build Your App
-
-Review the developer documentation to learn how to build your app and start sending messages. [See documentation](https://developers.facebook.com/docs/whatsapp/cloud-api).
-
-## Step 6: Integrate AI into the Application
-
-Now that we have an end to end connection, we can make the bot a little more clever then just shouting at us in upper case. All you have to do is come up with your own `generate_response()` function in [whatsapp_utils.py](https://github.com/daveebbelaar/python-whatsapp-bot/blob/main/app/utils/whatsapp_utils.py).
-
-If you want a cookie cutter example to integrate the OpenAI Assistans API with a retrieval tool, then follow these steps.
-1. Watch this video: [OpenAI Assistants Tutorial](https://www.youtube.com/watch?v=0h1ry-SqINc)
-2. Create your own assistant with OpenAI and update your `OPENAI_API_KEY` and `OPENAI_ASSISTANT_ID` in the environment variables.
-3. Provide your assistant with data and instructions
-4. Update [openai_service.py](https://github.com/daveebbelaar/python-whatsapp-bot/blob/main/app/services/openai_service.py) to your use case.
-5. Import `generate_reponse` into [whatsapp_utils.py](https://github.com/daveebbelaar/python-whatsapp-bot/blob/main/app/utils/)
-6. Update `process_whatsapp_message()` with the new `generate_reponse()` function.
-
-## Step 7: Add a Phone Number
-
-When you’re ready to use your app for a production use case, you need to use your own phone number to send messages to your users.
-
-To start sending messages to any WhatsApp number, add a phone number. To manage your account information and phone number, [see the Overview page.](https://business.facebook.com/wa/manage/home/) and the [WhatsApp docs](https://developers.facebook.com/docs/whatsapp/phone-numbers/).
-
-If you want to use a number that is already being used in the WhatsApp customer or business app, you will have to fully migrate that number to the business platform. Once the number is migrated, you will lose access to the WhatsApp customer or business app. [See Migrate Existing WhatsApp Number to a Business Account for information](https://developers.facebook.com/docs/whatsapp/cloud-api/get-started/migrate-existing-whatsapp-number-to-a-business-account).
-
-Once you have chosen your phone number, you have to add it to your WhatsApp Business Account. [See Add a Phone Number](https://developers.facebook.com/docs/whatsapp/cloud-api/get-started/add-a-phone-number).
-
-When dealing with WhatsApp Business API and wanting to experiment without affecting your personal number, you have a few options:
-
-1. Buy a New SIM Card
-2. Virtual Phone Numbers
-3. Dual SIM Phones
-4. Use a Different Device
-5. Temporary Number Services
-6. Dedicated Devices for Development
-
-**Recommendation**: If this is for a more prolonged or professional purpose, using a virtual phone number service or purchasing a new SIM card for a dedicated device is advisable. For quick tests, a temporary number might suffice, but always be cautious about security and privacy. Remember that once a number is associated with WhatsApp Business API, it cannot be used with regular WhatsApp on a device unless you deactivate it from the Business API and reverify it on the device.
-
-## Datalumina
-
-This document is provided to you by Datalumina. We help data analysts, engineers, and scientists launch and scale a successful freelance business — $100k+ /year, fun projects, happy clients. If you want to learn more about what we do, you can visit our [website](https://www.datalumina.com/) and subscribe to our [newsletter](https://www.datalumina.com/newsletter). Feel free to share this document with your data friends and colleagues.
-
-## Tutorials
-For video tutorials, visit the YouTube channel: [youtube.com/@daveebbelaar](youtube.com/@daveebbelaar)
+1. En el popup de Editar URL de callback de webhook, ingresa la URL proporcionada por el agente de ngrok para exponer tu aplicación a internet en el campo URL de Callback, con /webhook al final

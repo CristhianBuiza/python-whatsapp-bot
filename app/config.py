@@ -15,7 +15,6 @@ def load_configurations(app):
     app.config["PHONE_NUMBER_ID"] = os.getenv("PHONE_NUMBER_ID")
     app.config["VERIFY_TOKEN"] = os.getenv("VERIFY_TOKEN")
 
-
 def configure_logging():
     logging.basicConfig(
         level=logging.INFO,

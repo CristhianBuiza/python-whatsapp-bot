@@ -1,47 +1,37 @@
 from openai import OpenAI
 import shelve
+import time
 from dotenv import load_dotenv
 import os
 import time
 import logging
+from .micro import procesar_dni
 
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_ASSISTANT_ID = os.getenv("OPENAI_ASSISTANT_ID")
+OPENAI_ASSISTANT_ID = "asst_ISNyN5kj7rlwzG8Q11Ipjzol"
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-
-def upload_file(path):
-    # Upload a file with an "assistants" purpose
-    file = client.files.create(
-        file=open("../../data/airbnb-faq.pdf", "rb"), purpose="assistants"
-    )
-
-
-def create_assistant(file):
-    """
-    You currently cannot set the temperature for Assistant via the API.
-    """
-    assistant = client.beta.assistants.create(
-        name="WhatsApp AirBnb Assistant",
-        instructions="You're a helpful WhatsApp assistant that can assist guests that are staying in our Paris AirBnb. Use your knowledge base to best respond to customer queries. If you don't know the answer, say simply that you cannot help with question and advice to contact the host directly. Be friendly and funny.",
-        tools=[{"type": "retrieval"}],
-        model="gpt-4-1106-preview",
-        file_ids=[file.id],
-    )
-    return assistant
-
-
 # Use context manager to ensure the shelf file is closed properly
+
 def check_if_thread_exists(wa_id):
     with shelve.open("threads_db") as threads_shelf:
-        return threads_shelf.get(wa_id, None)
+        thread_info = threads_shelf.get(wa_id, None)
+        if thread_info:
+            return thread_info["thread_id"]  # Si solo necesitas el thread_id
+        return None
 
-
-def store_thread(wa_id, thread_id):
+def store_thread(wa_id, thread_id, dni=None):
     with shelve.open("threads_db", writeback=True) as threads_shelf:
-        threads_shelf[wa_id] = thread_id
+        threads_shelf[wa_id] = {"thread_id": thread_id, "dni": dni}
 
+def update_dni_in_thread(wa_id, dni):
+    with shelve.open("threads_db", writeback=True) as threads_shelf:
+        threads_shelf[wa_id]["dni"] = dni
+        
+def update_confirm_dni_in_thread(wa_id, confirm_dni):
+    with shelve.open("threads_db", writeback=True) as threads_shelf:
+        threads_shelf[wa_id]["confirm_dni"] = confirm_dni
 
 def run_assistant(thread, name):
     # Retrieve the Assistant
@@ -69,29 +59,48 @@ def run_assistant(thread, name):
 
 
 def generate_response(message_body, wa_id, name):
-    # Check if there is already a thread_id for the wa_id
-    thread_id = check_if_thread_exists(wa_id)
-
+    thread_id = None
+    # es una tipo de base de datos, para persistir
+    with shelve.open("threads_db") as threads_shelf:
+        thread_info = threads_shelf.get(wa_id, None)
+        
     # If a thread doesn't exist, create one and store it
-    if thread_id is None:
+    if not thread_info:
         logging.info(f"Creating new thread for {name} with wa_id {wa_id}")
         thread = client.beta.threads.create()
-        store_thread(wa_id, thread.id)
+        store_thread(wa_id, thread.id)  # DNI is None by default
         thread_id = thread.id
-
-    # Otherwise, retrieve the existing thread
-    else:
-        logging.info(f"Retrieving existing thread for {name} with wa_id {wa_id}")
+        return "Hola, proporcione su DNI para continuar."
+    else: 
+        thread_id = thread_info['thread_id']
+        if thread_info and thread_info.get("dni") is None or thread_info.get("confirm_dni") is False:
+            # set dni in thread_info
+            dni = procesar_dni(message_body)
+            if dni == "error":
+                return "No se encontro el dni, por favor ingrese un dni valido."
+            else:
+                update_dni_in_thread(wa_id, dni)
+                return "Eres " + dni + "? responde con si o no"
+        elif thread_info and thread_info.get("dni") is not None and thread_info.get("confirm_dni") is None:
+            if message_body.lower() == "si":
+                update_confirm_dni_in_thread(wa_id, True)
+                return "En que te puedo ayudar?"
+            elif message_body.lower() == "no":
+                update_confirm_dni_in_thread(wa_id, False)
+                return "Por favor, proporcione su DNI para continuar."
+            else:
+                return "Por favor, responda con 'si' o 'no'"
+            
         thread = client.beta.threads.retrieve(thread_id)
 
-    # Add message to thread
-    message = client.beta.threads.messages.create(
-        thread_id=thread_id,
-        role="user",
-        content=message_body,
-    )
+        # Add message to thread
+        client.beta.threads.messages.create(
+            thread_id=thread_id,
+            role="user",
+            content=message_body,
+        )
 
-    # Run the assistant and get the new message
-    new_message = run_assistant(thread, name)
+        # Run the assistant and get the new message
+        new_message = run_assistant(thread, name)
 
-    return new_message
+        return new_message  
